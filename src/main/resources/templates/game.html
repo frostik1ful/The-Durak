@@ -1,0 +1,937 @@
+<!DOCTYPE html>
+<html xmlns:th="http://www.thymeleaf.org">
+<head>
+    <meta charset="UTF-8">
+    <title>Game</title>
+    <link rel="stylesheet" href="/css/style.css">
+    <link th:href="@{/css/bootstrap.css}" rel="stylesheet"/>
+    <link th:href="@{/css/style.css}" rel="stylesheet"/>
+    <style>
+        body {
+            background-image: url(/images/deskbig.jpg);
+        }
+    </style>
+</head>
+<body id="body">
+<div th:insert="~{header :: header}"></div>
+<div class="mainContainer">
+    <div class="enemyBox">
+        <div class="enemyName" th:text="${enemyName}"></div>
+        <div class="playerHand">
+            <div id="enemyHand" class="cardBlock">
+                <div class="gameCard blankCard enemyHandCard" th:each="card:${enemyCards}" th:id="${card.id}"
+                     th:text="${card.id}"></div>
+            </div>
+        </div>
+    </div>
+    <div class="table1">
+        <div class="gameField" id="innerField">
+            <div th:each="cell:${fieldCells}" class="gameCard tableCard bottomCard"
+                 th:id="${cell.getBottomCard().getId()}" th:style="${cell.getBottomCard().getPath()}">
+                <div class="gameCard upperCard tableCard" th:unless="${cell.getUpperCard() == null}"
+                     th:style="${cell.getUpperCard().getPath()}" th:id="${cell.getUpperCard().getId()}"
+                     th:text="${cell.getUpperCard().getId()}"></div>
+            </div>
+        </div>
+        <div class="deck">
+            <div class="deckCardBlock">
+                <div id="lastCard" th:if="${lastCardData != null}" class="gameCard rotatedCard lastCard"
+                     th:style="${lastCardData.getPath()}">
+                </div>
+
+
+                <div class="gameCard preLastCardBlock">
+                    <div id="preLastCard" th:if="${cardsLeft > 1}" class='gameCard blankCard'></div>
+                </div>
+            </div>
+            <div class="actionButtonBlock">
+                <button type="button" id="actionButton" class="btn btn-primary">Action</button>
+            </div>
+
+        </div>
+    </div>
+
+    <div class="playerHand">
+        <div id="myHand" class="cardBlock">
+            <div th:each="card:${myCardsPaths}" class="gameCard myCard" th:id="${card.id}" th:text="${card.id}"
+                 th:style="${card.path}">
+
+            </div>
+
+        </div>
+        <button id="addCards">Add cards</button>
+        <button id="takeAll">Take cards</button>
+        <button id="updateData">Update Data</button>
+    </div>
+</div>
+
+
+</body>
+<script src="http://code.jquery.com/jquery-latest.min.js"></script>
+
+
+<script>
+    let body = $("#body");
+    let deck = $(".preLastCardBlock");
+    let addCardsBut = $("#addCards");
+    let takeButton = $("#takeAll");
+    let updateButton = $("#updateData");
+    let actionButton = $("#actionButton");
+    let myCards = $(".myCard");
+    let enemyCards = $(".tableCard");
+    let enemyHandCards = $(".enemyHandCard");
+    let upperCards = $(".upperCard");
+    let field = $("#innerField");
+    let myHand = $("#myHand");
+    let enemyHand = $('#enemyHand');
+    let bottomCards = $(".bottomCard");
+    let selectedCard = null;
+    let myTurn = true;
+    let myMove = true;
+    window.onload = function () {
+        bindElements()
+    }
+
+
+    function bindElements() {
+        $(bottomCards).each(function () {
+            bindBottomCard(this);
+        });
+        $(myCards).each(function () {
+            bindMyCard(this);
+        });
+        setInterval(updateStatus, 2000);
+
+    }
+
+    function bindBottomCard(card) {
+        $(card).click(function () {
+            if (selectedCard !== null) {
+                tryToPutCardOnCard(card, selectedCard);
+
+            }
+        });
+    }
+
+    function bindMyCard(card) {
+        $(card).click(function () {
+            if (myMove) {
+                selectMyCard(card);
+            }
+        });
+    }
+
+    function updateStatus() {
+        $.ajax({
+            url: '/game/update',
+            success: function (data) {
+                myTurn = data.isMyTurn;
+                myMove = data.isMyMove;
+                $(actionButton).text(data.actionButtonText);
+
+                updateEnemyCards(data.enemyHandCards, data.cardsLeftInDeck);
+                updateMyHandCards(data.myHandCards, data.cardsLeftInDeck);
+                if (!myMove) {
+                    updateFieldCells(data.fieldCells);
+                }
+
+            }
+        });
+
+        function updateMyHandCards(cards, cardsLeft) {
+            let myCards = $('.myCard');
+            if (myCards.length < cards.length) {
+
+                let cardsToAdd = cards.filter(card => {
+                    let cardExists = false;
+
+                    $(myCards).each(function () {
+                        if (parseInt($(this).attr('id')) === card.id) {
+                            cardExists = true;
+                        }
+                    });
+                    if (!cardExists) {
+                        return true;
+                    }
+                });
+
+                let cardsToTakeFromTable = cardsToAdd.filter(card => {
+                    let cardExists = false;
+
+                    $('.tableCard').each(function () {
+                        if (parseInt($(this).attr('id')) === card.id) {
+                            cardExists = true;
+                        }
+                    });
+                    if (cardExists) {
+                        return true;
+                    }
+                });
+                if (cardsToTakeFromTable.length > 0) {
+                    takeCardsFromField();
+                } else if (cardsToAdd.length > 0) {
+                    takeNewCardsFromDeckToMyHand(cardsToAdd, cardsLeft);
+                }
+
+            }
+        }
+    }
+
+    function updateFieldCells(cells) {
+        let enemyCards = $('.enemyHandCard');
+        let tableCards = $('.tableCard');
+        let upperCards = $('.upperCard');
+        let requiredCells;
+
+        requiredCells = cells.filter(cell => {
+            let cardExists = false;
+
+            $(tableCards).each(function () {
+                if (parseInt($(this).attr('id')) === cell.bottomCard.id) {
+                    cardExists = true;
+                }
+            });
+            if (!cardExists) {
+                return true;
+            }
+        });
+
+        if (requiredCells.length > 0) {
+            addBottomCards(requiredCells)
+        }
+
+
+        requiredCells = cells.filter(cell => {
+            let cardExists = false;
+            let upperCard = cell.upperCard;
+            if (upperCard != null) {
+
+                $(upperCards).each(function () {
+                    if (parseInt($(this).attr('id')) === upperCard.id) {
+                        cardExists = true;
+                    }
+                });
+                if (!cardExists) {
+                    return true;
+                }
+            }
+        });
+        if (requiredCells.length > 0) {
+            addUpperCards(requiredCells);
+        }
+
+        function addBottomCards(cells) {
+            $(cells).each(function () {
+                let cell = this;
+                let enemyCard = findEnemyCardById(cell.bottomCard.id);
+                moveEnemyCardToTable(enemyCard, cutImagePath(cell.bottomCard.path));
+            });
+        }
+
+        function addUpperCards(cells) {
+            $(cells).each(function () {
+                let upperCard = this.upperCard;
+                let bottomCard = findBottomCard(this.bottomCard.id);
+                let enemyCard = findEnemyCardById(upperCard.id);
+                putEnemyCardToCard(enemyCard, bottomCard, cutImagePath(upperCard.path));
+            });
+        }
+
+        function findBottomCard(id) {
+            let fundedCard;
+            $('.bottomCard').each(function () {
+                if (parseInt(this.id) === id) {
+                    fundedCard = this;
+                    return false;
+                }
+            });
+            return fundedCard;
+        }
+
+        function findEnemyCardById(id) {
+            let fundedCard;
+            $(enemyCards).each(function () {
+                if (parseInt($(this).attr('id')) === id) {
+                    fundedCard = this;
+                    return false;
+                }
+            });
+            return fundedCard;
+        }
+    }
+
+    $(enemyHandCards).click(function () {
+
+        // let card = this;
+        // let bottomCard = $('.bottomCard')[0];
+        // putEnemyCardToCard(card,bottomCard,"url('/images/cards/diamonds/seven.png')");
+        // $.ajax({
+        //     url:'/game/enemyCard',
+        //     data:{cardId:$(card).attr('id')},
+        //     success : function (data) {
+        //         console.log(data);
+        //         //addCardsToEnemy(6);
+        //         //putEnemyCardToCard(card,bottomCards[1],data.path);
+        //         moveEnemyCardToTable(card,data.path);
+        //         //takeCardsToEnemy();
+        //
+        //     }
+        // });
+    });
+    $(updateButton).click(function () {
+        // $.ajax({
+        //    url:'/game/update',
+        //    success:function (data) {
+        //         updateEnemyCards(data.countOfEnemyHandCards);
+        //    }
+        // });
+
+        //moveLastCardToMyHand();
+        //moveLastCardToEnemyHand();
+        takeCardsToEnemy();
+        //updateEnemyCards(7,0);
+    });
+    $(actionButton).click(function () {
+        $.ajax({
+            url: '/game/action',
+            success: function (data) {
+
+            }
+        });
+    });
+
+    function updateEnemyCards(cardsData, cardsLeft) {
+
+
+        let enemyTakesCards = false;
+        $('.tableCard').each(function () {
+            let tableCard = this;
+            if (!enemyTakesCards) {
+                $(cardsData).each(function () {
+                    if (this.id === parseInt(tableCard.id)) {
+                        enemyTakesCards = true;
+                        return false;
+                    }
+                });
+            } else {
+                return false;
+            }
+
+        });
+        if (enemyTakesCards) {
+            takeCardsToEnemy();
+        } else {
+            let count = cardsData.length;
+            let length = $('.enemyHandCard').length;
+            if (count > length) {
+                let difference = count - length;
+                let cardsAdded = cardsLeft + difference;
+
+                addCardsToEnemy(cardsData, difference, cardsAdded);
+            }
+        }
+
+
+    }
+
+    function takeCardsToEnemy() {
+        let delay = 0;
+        let tableCards = $('.tableCard');
+        let bottomCards = [];
+        let upperCards = [];
+        enemyHandCards = $(".enemyHandCard");
+        let cardsToFlip = [];
+        let blankPath = "url('/images/cards/back.png')";
+
+        $(tableCards).each(function () {
+            if ($(this).hasClass('upperCard')) {
+                upperCards.push(this);
+            } else {
+                bottomCards.push(this);
+            }
+        });
+
+        if (upperCards.length > 0) {
+            delay = 1200;
+        }
+
+        let it = enemyHandCards.length;
+        let newCardsStart = it;
+        for (let i = 0; i < upperCards.length + bottomCards.length; i++) {
+            let cloneCard = '<div style="opacity: 0.3" class="gameCard blankCard enemyHandCard" ></div>';
+            $(enemyHand).append(cloneCard);
+        }
+
+        enemyHandCards = $(".enemyHandCard");
+
+        $(upperCards).each(function () {
+            addCloneToHand(this);
+        });
+
+        $(bottomCards).each(function () {
+            addCloneToHand(this);
+        });
+
+        it = newCardsStart;
+
+        $(upperCards).each(function () {
+            $(this).removeClass('upperCard');
+            $(this).css({zIndex: 1});
+            moveCardToCard(enemyHandCards[it], this);
+            it++;
+        });
+
+
+        setTimeout(function () {
+            it = enemyHandCards.length - 1;
+            for (let i = bottomCards.length - 1; i >= 0; i--) {
+                moveCardToCard(enemyHandCards[it], bottomCards[i]);
+                it--;
+            }
+        }, delay);
+
+        setTimeout(function () {
+            $(cardsToFlip).each(function () {
+                flipCard(this, blankPath);
+            });
+        }, 1500 + delay);
+
+
+        function addCloneToHand(card) {
+            let cloneCard = $(enemyHandCards[it]);
+            $(cloneCard).attr('id', $(card).attr('id'));
+            $(cloneCard).text($(card).attr('id'));
+            let path = subStringPath($(card).css('background-image'));
+            $(cloneCard).css({backgroundImage: path});
+            cardsToFlip.push(cloneCard);
+            it++;
+        }
+
+
+    }
+
+    function addCardsToEnemy(cardsData, count, cardsLeft) {
+        let iterator = cardsData.length - count;
+        let needToAddLastCard = false;
+        let needToAddPreLastCard = false;
+        let preLastCard = $('#preLastCard');
+        let lastCard = $('#lastCard');
+        let lastClone;
+        let newCards = [];
+        let cloneCards = [];
+        let limit = count;
+
+
+        if (count === cardsLeft) {
+            limit -= 2;
+            needToAddLastCard = true;
+            if (cardsLeft !== 1) {
+                needToAddPreLastCard = true;
+            }
+        } else if (count === cardsLeft - 1) {
+            limit--;
+            needToAddPreLastCard = true;
+        }
+        if (limit < 0) {
+            limit = 0;
+        }
+
+        if (needToAddLastCard) {
+            newCards.push(lastCard);
+        }
+        if (needToAddPreLastCard) {
+            newCards.push(preLastCard);
+
+        }
+
+
+        for (let i = 0; i < limit; i++) {
+            let newCard = addCloneToParent(preLastCard, deck);
+            let cloneCard = addCloneToParent(newCard, enemyHand);
+            $(newCard).css({position: 'fixed', opacity: 1});
+            $(cloneCard).removeClass('preLastCard');
+            $(cloneCard).addClass('enemyHandCard');
+            $(cloneCard).attr('id', cardsData[iterator].id);
+            iterator++;
+            newCards.push(newCard);
+            cloneCards.push(cloneCard);
+        }
+
+
+        if (needToAddPreLastCard) {
+            let cloneCard = addCloneToParent(preLastCard, enemyHand);
+            $(cloneCard).removeClass('preLastCard');
+            $(cloneCard).addClass('enemyHandCard');
+            $(cloneCard).attr('id', cardsData[iterator].id);
+            iterator++;
+            cloneCards.push(cloneCard);
+        }
+        if (needToAddLastCard) {
+            lastClone = addCloneToParent(lastCard, enemyHand);
+            $(lastClone).removeClass('rotatedCard lastCard');
+            $(lastClone).addClass('blankCard enemyHandCard');
+            $(lastClone).attr('id', cardsData[iterator].id);
+            iterator++;
+            cloneCards.push(lastClone);
+        }
+
+
+        newCards = newCards.reverse();
+
+        $(newCards).each(function (i) {
+            setTimeout(function () {
+                if (cardsLeft === 1) {
+                    rotateLastCard(lastCard);
+                    moveCardToCard(cloneCards[i], lastCard);
+                    setTimeout(function () {
+                        flipCard(lastClone, "url(\"/images/cards/back.png\")");
+                    }, 1000);
+                } else {
+                    moveCardToCard(cloneCards[i], newCards[i]);
+                }
+
+
+                cardsLeft--;
+            }, 300 * i);
+        });
+
+    }
+
+    function putEnemyCardToCard(enemyCard, bottomCard, path) {
+        $(enemyCard).css({zIndex: 1});
+        let clone = putCardOnCard(bottomCard, enemyCard);
+        $(clone).css({backgroundImage: path});
+        $(clone).removeClass('enemyHandCard blankCard');
+        flipCard(enemyCard, path);
+    }
+
+    function moveEnemyCardToTable(card, path) {
+
+        let fieldCardClone = putCardOnTable(card);
+        $(fieldCardClone).css({backgroundImage: path});
+        $(fieldCardClone).removeClass('blankCard enemyHandCard');
+        //$(fieldCardClone).addClass('tableCard bottomCard');
+        $(card).css({position: 'fixed', zIndex: 1, opacity: 1});
+
+        flipCard(card, path);
+        // setImageWithDelay(card,path,500);
+        // rotateCard(card,-180,0);
+        bindBottomCard(fieldCardClone);
+    }
+
+
+    $(field).click(function (event) {
+        if (event.target === this) {
+            if (selectedCard !== null) {
+                tryToPutCardOnTable(selectedCard);
+                selectedCard = null;
+            }
+        }
+
+    });
+
+    function tryToPutCardOnTable(card) {
+        $.ajax({
+            url: '/game/putCardOnTable',
+            data: {cardId: $(card).attr('id')},
+            success: function (data) {
+                if (data === true) {
+                    putCardOnTable(card);
+                }
+            }
+        });
+    }
+
+    function putCardOnTable(card) {
+        let clone = addCloneToParent(card, field);
+        $(clone).addClass('tableCard bottomCard');
+        $(clone).removeClass('myCard');
+        resetCardPos(clone);
+        moveCardToCard(clone, card);
+        return clone;
+        //selectedCard=null;
+    }
+
+    $(addCardsBut).click(function () {
+        tryToTakeNewCardsFromDeckToMyHand();
+    });
+
+    function tryToTakeNewCardsFromDeckToMyHand() {
+        $.ajax({
+            url: "/game/takeNewCards",
+            success: function (data) {
+                if (data.newCards.length > 0) {
+                    takeNewCardsFromDeckToMyHand(data.newCards, data.cardsLeft);
+                }
+            }
+        })
+    }
+
+    function takeNewCardsFromDeckToMyHand(cards, cardsLeft) {
+
+        $(cards).each(function () {
+            console.log("TAKEN CARD FROM DECK id " + this.id + " path " + this.path + " cardsLeft " + cardsLeft);
+        });
+
+        let needToAddLastCard = false;
+        let needToAddPreLastCard = false;
+        let preLastCard = $('#preLastCard');
+        let lastCard = $('#lastCard');
+        let cloneCards = [];
+        let newCards = [];
+
+        let limit = cards.length;
+
+        if (cardsLeft === cards.length) {
+            limit -= 2;
+            needToAddLastCard = true;
+            if (cardsLeft !== 1) {
+                needToAddPreLastCard = true;
+            }
+
+        } else if (cardsLeft === cards.length + 1) {
+            limit--;
+            needToAddPreLastCard = true;
+        }
+        if (limit < 0) {
+            limit = 0;
+        }
+
+        if (needToAddLastCard) {
+            newCards.push(lastCard);
+        }
+        if (needToAddPreLastCard) {
+            newCards.push(preLastCard);
+        }
+
+        for (let i = 0; i < limit; i++) {
+            let newCard = addCloneToParent(preLastCard, deck);
+            $(newCard).css({position: 'fixed', opacity: 1});
+            addCloneCard(newCard, cards[i].path);
+            newCards.push(newCard);
+        }
+
+        if (needToAddPreLastCard) {
+            let cloneCard;
+            if (!needToAddLastCard) {
+                cloneCard = addCloneCard(preLastCard, cards[cards.length - 1].path);
+            } else {
+                cloneCard = addCloneCard(preLastCard, cards[cards.length - 2].path);
+            }
+
+            $(cloneCard).removeClass('preLastCard');
+        }
+        if (needToAddLastCard) {
+            let cloneCard = addCloneCard(lastCard, cards[cards.length - 1].path);
+            $(cloneCard).removeClass('lastCard rotatedCard');
+        }
+
+        function addCloneCard(card, path) {
+            let cloneCard = addCloneToParent(card, myHand);
+            $(cloneCard).addClass('myCard');
+            $(cloneCard).removeClass('blankCard');
+
+            $(cloneCard).css({
+                position: 'relative',
+                backgroundImage: path
+            });
+
+            bindMyCard(cloneCard);
+            myCards.push(cloneCard);
+
+            cloneCards.push(cloneCard);
+            return cloneCard;
+        }
+
+        newCards = newCards.reverse();
+        $(newCards).each(function (i) {
+            setTimeout(function () {
+                let cloneCard = cloneCards[i];
+                if (cardsLeft === 1) {
+                    rotateLastCard(lastCard);
+                    moveCardToCard(cloneCard, lastCard);
+                } else {
+                    flipCard(newCards[i], cards[i].path);
+                    moveCardToCard(cloneCard, newCards[i]);
+                }
+                $(cloneCard).attr('id', cards[i].id);
+                cardsLeft--;
+            }, 500 * i);
+        });
+    }
+
+    function tryToTakeCardsFromField() {
+        $.ajax({
+            url: "/game/takeCardsFromField",
+            success: function (data) {
+                if (data === true) {
+                    takeCardsFromField();
+                }
+            }
+        });
+    }
+
+    function takeCardsFromField() {
+        let delay = 0;
+        let tableCards = $('.tableCard');
+        let bottomCards = [];
+        let upperCards = [];
+        let clones = [];
+
+        $(tableCards).each(function () {
+            if ($(this).hasClass('upperCard')) {
+                upperCards.push(this);
+            } else {
+                bottomCards.push(this);
+            }
+        });
+        if (upperCards.length > 0) {
+            delay = 1200;
+        }
+
+        $(upperCards).each(function () {
+            let card = this;
+            $(card).removeClass('upperCard');
+            let newCard = addCardCloneToMyHand(card);
+            $(card).css({zIndex: 1});
+
+            setTimeout(function () {
+                moveCardToCard(newCard, card);
+            }, 100);
+        });
+
+        setTimeout(function () {
+            $(bottomCards).each(function () {
+                $(this).css({zIndex: 1});
+                let cloneCard = addCardCloneToMyHand(this);
+                cloneCard.removeClass('tableCard bottomCard');
+                clones.push(cloneCard);
+            });
+            setTimeout(function () {
+                for (let i = bottomCards.length - 1; i >= 0; i--) {
+                    moveCardToCard(clones[i], bottomCards[i]);
+                }
+            }, 100);
+
+
+        }, delay);
+    }
+
+    $(takeButton).click(function () {
+        tryToTakeCardsFromField();
+    });
+    // function buildCloneCard(card) {
+    //     return  $('<div/>', {
+    //         text: $(card).attr('id'),
+    //         id:$(card).attr('id'),
+    //         class: $(card).attr('class'),
+    //         css:{
+    //             position:'fixed',
+    //             backgroundImage:subStringPath($(card).css('background-image')),
+    //             opacity:0
+    //         }
+    //     });
+    //
+    //
+    // }
+    function addCloneToParent(card, parentNode) {
+        let clone = $(card).clone();
+        $(clone).css('opacity', '0.5');
+        $(parentNode).append(clone);
+        return clone;
+    }
+
+    function subStringPath(path) {
+        return "url(\"" + path.substring(path.indexOf("/images"));
+    }
+
+    function addCardCloneToMyHand(card) {
+        $(card).addClass('myCard');
+        let cloneCard = addCloneToParent(card, myHand)
+        bindMyCard(cloneCard);
+        myCards.push(cloneCard);
+        return cloneCard;
+    }
+
+    function flipCard(card, newPath) {
+        rotateCard(card, 0, 90, 500);
+        setImageWithDelay(card, newPath, 500);
+        setTimeout(function () {
+            rotateCard(card, 270, 360, 500);
+        }, 500);
+        setInterval(function () {
+            $(card).css('transform', 'rotateY(' + 0 + 'deg)');
+        }, 1000);
+
+        function rotateCard(card, fromDeg, toDeg, duration) {
+            $({rotation: fromDeg}).animate({rotation: toDeg},
+                {
+                    duration: duration, easing: 'swing', step: function () {
+                        $(card).css('transform', 'rotateY(' + this.rotation + 'deg)');
+                    }
+                });
+        }
+    }
+
+    function moveLastCardToMyHand() {
+        let lastCard = $('#lastCard');
+        let lastClone = addCardCloneToMyHand(lastCard);
+        $(lastClone).removeClass('rotatedCard');
+        rotateLastCard(lastCard);
+        moveCardToCard(lastClone, lastCard);
+    }
+
+    function moveLastCardToEnemyHand() {
+        let lastCard = $('#lastCard');
+        let lastClone = addCloneToParent(lastCard, enemyHand);
+        $(lastClone).removeClass('rotatedCard');
+
+        rotateLastCard(lastCard);
+        moveCardToCard(lastClone, lastCard);
+        setTimeout(function () {
+            flipCard(lastClone, "url(\"/images/cards/back.png\")");
+        }, 1000);
+    }
+
+    function rotateLastCard(lastCard) {
+        $({deg: -90}).animate({deg: 0}, {
+            duration: 1000,
+            step: function (now) {
+                $(lastCard).css({transform: 'rotate(' + now + 'deg)'});
+            }
+        });
+    }
+
+    function tryToPutCardOnCard(cardTo, card) {
+        $.ajax({
+            url: '/game/putCardOnCard',
+            data: {cardToId: $(cardTo).attr('id'), cardId: $(card).attr('id')},
+            success: function (data) {
+                if (data === true) {
+                    putCardOnCard(cardTo, card);
+                }
+            }
+        });
+    }
+
+    function putCardOnCard(cardTo, card) {
+        //$(card).removeClass("bottomCard");
+        $(card).unbind();
+
+        let clone = addCloneToParent(card, cardTo);
+        $(clone).addClass('upperCard tableCard');
+        $(cardTo).removeClass('bottomCard');
+
+        fitCardSize(cardTo, clone);
+        resetCardPos(selectedCard);
+        resetCardPos(clone);
+        moveCardToCard(clone, card);
+        return clone;
+
+
+    }
+
+    $(enemyCards).each(function () {
+        let card = this;
+        $(window).resize(function () {
+            resizeCardToCard(card, card);
+        });
+    });
+
+    function resizeCardToCard(cardTo, card) {
+        let width = $(cardTo).width();
+        let height = $(cardTo).height();
+
+    }
+
+    function moveCardToCard(cardTo, card) {
+        $(cardTo).css({position: 'relative'});
+
+        let cord = $(card).offset();
+        $(card).css({top: cord.top, left: cord.left, position: 'fixed'});
+        let offset = $(cardTo).offset();
+        let x = offset.left;
+        let y = offset.top;
+
+
+        let cardWidth = $(card).width();
+        let cardToWidth = $(cardTo).width();
+
+        if (cardWidth !== cardToWidth) {
+            $(card).animate({
+                left: x,
+                top: y,
+                height: $(cardTo).height(),
+                width: cardToWidth
+            }, 1000, function () {
+                showCloneCard();
+            });
+        } else {
+            $(card).animate({
+                left: x,
+                top: y
+            }, 1000, function () {
+                showCloneCard();
+            });
+        }
+
+        function showCloneCard() {
+            $(cardTo).css('opacity', '1');
+
+            if (selectedCard === card) {
+                selectedCard = null;
+            }
+            $(card).remove();
+        }
+    }
+
+    function selectMyCard(card) {
+        if (selectedCard !== card) {
+            selectedCard = card;
+            resetPositionMyCards();
+            $(card).animate({
+                bottom: 30
+            }, 300);
+            //$(card).removeClass('myCard');
+        } else {
+            selectedCard = null;
+            $(card).animate({
+                bottom: 0
+            }, 300);
+        }
+
+    }
+
+    function resetPositionMyCards() {
+        $(myCards).each(function () {
+            $(this).animate({
+                bottom: 0
+            }, 100);
+        })
+    }
+
+    function resetCardPos(card) {
+        $(card).css('bottom', '0');
+        //selectedCard = null;
+    }
+
+    function setImageWithDelay(card, path, delay) {
+        setTimeout(function () {
+            $(card).css({backgroundImage: path});
+        }, delay);
+    }
+
+    function fitCardSize(cardTo, card) {
+        let cardWidth = $(card).width();
+        let cardToWidth = $(cardTo).width();
+        if (cardWidth !== cardToWidth) {
+            $(card).css('width', cardToWidth);
+            $(card).css('height', $(cardTo).height());
+        }
+    }
+
+    function cutImagePath(path) {
+        return path.substring(17, path.length);
+    }
+</script>
+</html>

@@ -1,0 +1,148 @@
+.box{
+    background-color: blueviolet;
+    font-size: 30px;
+}
+.elem{
+    font-family: -apple-system,BlinkMacSystemFont,"Segoe UI",Roboto,"Helvetica Neue",Arial,"Noto Sans",sans-serif,"Apple Color Emoji","Segoe UI Emoji","Segoe UI Symbol","Noto Color Emoji";
+    font-size: 1rem;
+    font-weight: 400;
+    line-height: 1.5;
+    color: #212529;
+    text-align: left;
+    background-color: rgba(0, 0, 0, .85);
+    display: block;
+    box-sizing: border-box;
+}
+.btn{
+    font-weight: bold;
+
+}
+
+.mainContainer{
+    width: 100%;
+    height: 100%;
+    display: flex;
+    flex-direction: column;
+    justify-content: flex-start;
+
+    background-color: aqua;
+}
+.enemyBox{
+    width: 100%;
+    height: auto;
+    padding-bottom: 5px;
+    background-color: grey;
+}
+.enemyName{
+    width: auto;
+    height: auto;
+    background-color: #6f42c1;
+    text-align: center;
+    font-weight: bold;
+    font-size: 30px;
+}
+.enemyDeck{
+    width: 600px;
+    height: auto;
+    background-color: #007bff;
+}
+.table1{
+    width: 100%;
+    height: 400px;
+    display: flex;
+    flex-direction: row;
+    justify-content: flex-end;
+
+    background-color: white;
+}
+
+
+
+.gameField{
+    width: 70%;
+    height: 100%;
+    background-color: black;
+    display: flex;
+    flex-direction: row;
+    justify-content: flex-start;
+}
+
+.playerHand{
+    width: 100%;
+    height: auto;
+    background-color: #491217;
+}
+
+.deck{
+    height: 400px;
+    width: 15%;
+    padding-left: 30px;
+
+    background-color: #007bff;
+}
+.deckCardBlock{
+    width: 100%;
+    height: 70%;
+    padding-top: 50px;
+    display: flex;
+    flex-direction: column;
+    justify-content: flex-start;
+
+    background-color: red;
+}
+.cardBlock{
+    width: 100%;
+    height: auto;
+    min-height: 160px;
+    max-width: 100%;
+    margin-left: auto;
+    margin-right: auto;
+    display: flex;
+    flex-direction: row;
+    justify-content: center;
+    background-color: #1c7430;
+}
+.actionButtonBlock{
+    width: 100%;
+    height: 30%;
+    display: flex;
+    flex-direction: column;
+    justify-content: flex-end;
+    background-color: black;
+}
+
+.gameCard{
+    width: 115px;
+    height: 160px;
+    border-radius: 5%;
+    background-size:contain;
+    background-repeat: no-repeat;
+    position: relative;
+}
+
+
+.blankCard{
+    background-image: url("/images/cards/back.png");
+}
+.upperCard{
+    top: 50px;
+    width: 100%;
+    height: 100%;
+    position: relative;
+}
+
+.rotatedCard{
+    transform: rotate(-90deg);
+    position: absolute;
+}
+.preLastCard{
+    left: 40px;
+}
+.preLastCardBlock{
+    height: 160px;
+    width: 140px;
+    margin-left: 40px;
+    margin-top: 3px;
+    display: flex;
+}
+
