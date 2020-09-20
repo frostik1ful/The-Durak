@@ -13,6 +13,7 @@ import org.springframework.security.core.context.SecurityContextHolder;
 import org.springframework.stereotype.Controller;
 import org.springframework.ui.Model;
 import org.springframework.web.bind.annotation.*;
+
 import java.util.Optional;
 
 
@@ -29,102 +30,103 @@ public class GameController {
     PlayerDAO playerDAO;
     @Autowired
     CardDAO cardDAO;
-    @Autowired
-    CardPathCreator cardPathCreator;
+//    @Autowired
+//    CardPathCreator cardPathCreator;
     @Autowired
     GameLogic gameLogic;
     @Autowired
     GameStatus gameStatus;
 
     @GetMapping("/lobby")
-    public String lobby(Model model) {
-        model.addAttribute("games", gameDAO.getAllGames());
+    public String lobby(Model model){
+        model.addAttribute("games",gameDAO.getNotStartedGames());
         model.addAttribute("userName", getCurrentUser().getName());
         return "lobby";
     }
 
     @GetMapping("/createGame")
-    public String createGame() {
+    public String createGame(){
         gameLogic.createGame();
-
-        return "redirect:/game/lobby";
+        return"redirect:/game/lobby";
     }
 
     @RequestMapping(value = "/join", method = RequestMethod.POST)
-    public String join(@RequestParam Long id) {
+    public String join(@RequestParam Long id){
 
         if (gameLogic.tryJoinToGame(id)) {
-            return "game";
-        } else {
+            return "redirect:/game/game";
+        }
+        else {
             return "redirect:/game/lobby";
         }
 
     }
-
     @RequestMapping(value = "/update")
     @ResponseBody
-    public MainData update() {
+    public MainData update(){
         return gameStatus.getMainData();
     }
 
     @RequestMapping(value = "/action")
     @ResponseBody
-    public String action() {
+    public String action(){
         return gameLogic.doAction();
 
     }
 
     @RequestMapping(value = "/game")
-    public String game(Model model) {
+    public String game(Model model){
         gameStatus.updateData();
-        Optional<Game> game = gameStatus.getCurrentGame();
-        if (game.isPresent()) {
-            model.addAttribute("fieldCells", gameStatus.getFieldCells());
+        Optional<Game> game = gameStatus.getNotFinishedGame();
 
-            model.addAttribute("enemyName", gameStatus.getEnemyName());
-
-            model.addAttribute("enemyCards", gameStatus.getEnemyPlayerCards());
-
-            model.addAttribute("cardsLeft", gameStatus.getCardsLeft());
-
-            model.addAttribute("lastCardData", gameStatus.getLastCardData());
-
-            model.addAttribute("myCardsPaths", gameStatus.getCurrentPlayerCards());
-        } else {
+        if (game.isPresent()){
+            model.addAttribute("cardsReceived",gameStatus.isCardsReceived());
+            model.addAttribute("fieldCells",gameStatus.getFieldCells());
+            model.addAttribute("enemyName",gameStatus.getEnemyName());
+            model.addAttribute("enemyCards",gameStatus.getEnemyPlayerCards());
+            model.addAttribute("cardsLeft",gameStatus.getCardsLeft());
+//                if (deckCards.size()>15){
+//                    model.addAttribute("deckSize","background-image:url('/images/cards/bigDeck.png');");
+//                }
+//                else if (deckCards.size()>2){
+//                    model.addAttribute("deckSize","background-image:url('/images/cards/lowDeck.png');");
+//                }
+            model.addAttribute("lastCardData",gameStatus.getLastCardData());
+            model.addAttribute("myCards",gameStatus.getCurrentPlayerCards());
+        }
+        else {
             return "redirect:/game/lobby";
         }
-
 
         return "game";
     }
 
-    @RequestMapping(value = "/takeCardsFromField")
-    @ResponseBody
-    public boolean takeCardsFromField() {
-        return gameLogic.tryToTakeCardsFromField();
-    }
 
     @RequestMapping(value = "/putCardOnTable")
     @ResponseBody
-    public boolean putCardOnTable(@RequestParam long cardId) {
+    public boolean putCardOnTable(@RequestParam long cardId){
+        System.out.println("PutCardOnTable");
         return gameLogic.tryToPutCardOnTable(cardId);
     }
 
     @RequestMapping(value = "/putCardOnCard")
     @ResponseBody
-    public boolean putCardOnCard(@RequestParam long cardToId, @RequestParam long cardId) {
-        return gameLogic.tryToPutCardOnCard(cardToId, cardId);
+    public boolean putCardOnCard(@RequestParam long cardToId,@RequestParam long cardId){
+        System.out.println("puttingCard on card");
+        return gameLogic.tryToPutCardOnCard(cardToId,cardId);
     }
 
     @RequestMapping(value = "/takeNewCards")
     @ResponseBody
-    public CardPackage takeNewCards() {
+    public CardPackage takeNewCards(){
         return gameLogic.takeNewCards();
     }
 
 
-    private User getCurrentUser() {
+    private User getCurrentUser(){
         return userDAO.findUserByName(SecurityContextHolder.getContext().getAuthentication().getName());
     }
-
+    private String getUserName(){
+        return SecurityContextHolder.getContext().getAuthentication().getName();
+    }
 }

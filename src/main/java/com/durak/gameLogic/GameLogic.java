@@ -5,15 +5,16 @@ import com.durak.service.Interface.*;
 import com.durak.util.CardPathCreator;
 import com.durak.viewData.CardData.CardData;
 import com.durak.viewData.CardPackage;
-import com.durak.viewData.FieldCellData;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.security.core.context.SecurityContextHolder;
 import org.springframework.stereotype.Component;
+import org.springframework.web.context.annotation.SessionScope;
 
 import java.util.*;
 import java.util.stream.Collectors;
 
 @Component
+@SessionScope
 public class GameLogic {
     @Autowired
     GameDAO gameDAO;
@@ -54,15 +55,12 @@ public class GameLogic {
     public void createGame() {
         Optional<Player> optionalPlayer = playerDAO.findPlayerByName(getUserName());
         optionalPlayer.ifPresent(player -> {
-
-            player1 = optionalPlayer.get();
             currentPlayerNumber = 1;
-            leaveFromOtherGames(player1);
-            game = new Game(player1, deckDAO, fieldDAO);
-            player1.setGame(game);
-
+            leaveFromOtherGames(player);
+            game = new Game(player, deckDAO, fieldDAO);
+            player.setGame(game);
             gameDAO.save(game);
-            playerDAO.save(player1);
+            playerDAO.save(player);
         });
 
     }
@@ -73,14 +71,20 @@ public class GameLogic {
         Optional<Player> optionalPlayer = playerDAO.findPlayerByName(getUserName());
 
         if (optionalGame.isPresent() && optionalPlayer.isPresent()) {
-            leaveFromOtherGames(optionalPlayer.get());
+
             game = optionalGame.get();
-            if (!game.isStarted() && !game.isFinished() && game.getPlayer2() == null) {
+            if (!game.isStarted() && game.getPlayer2() == null) {
                 player1 = game.getPlayer1();
                 player2 = optionalPlayer.get();
+
+                leaveFromOtherGames(player2);
+
                 currentPlayerNumber = 2;
+
+                giveCardsToPlayers(player1,player2);
                 game.setPlayer2(player2);
-                giveCardsToPlayers();
+
+
                 whoseFirstTurn = whoseFirstTurn();
                 game.setWhichPlayerTurn(whoseFirstTurn);
                 game.setWhichPlayerMove(whoseFirstTurn);
@@ -92,22 +96,13 @@ public class GameLogic {
         return false;
     }
 
-    public void giveCardsToPlayers() {
-        updateData();
-        LinkedList<Card> deckCards = new LinkedList<>(game.getDeck().getCards());
-
-        addCards(player1, deckCards);
-        addCards(player2, deckCards);
-
-        game.getDeck().getCards().clear();
-
-        game.getDeck().getCards().addAll(deckCards);
-
-        gameDAO.save(game);
-
+    private void giveCardsToPlayers(Player player1,Player player2) {
+        addCards(player2);
+        addCards(player1);
     }
 
-    private List<Card> addCards(Player player, LinkedList<Card> deckCards) {
+    private List<Card> addCards(Player player) {
+        LinkedList<Card> deckCards = new LinkedList<>(game.getDeck().getCards());
         int cardsLeft = deckCards.size();
         int cardsToGive = 6 - player.getPlayerCards().size();
         cardsToGive = cardsLeft - cardsToGive >= 0 ? cardsToGive : cardsLeft;
@@ -120,7 +115,21 @@ public class GameLogic {
                 card.setPlayer(player);
                 card.setDeck(null);
             }
+            game.getDeck().getCards().clear();
+            game.getDeck().getCards().addAll(deckCards);
+            //game.getDeck().setCards(deckCards);
 
+
+            if (deckCards.size() == 1) {
+                player.setTakesPreLastCard(true);
+            }
+            if (deckCards.size() == 0){
+                if (cardsToGive > 1) {
+                    player.setTakesPreLastCard(true);
+                }
+                player.setTakesLastCard(true);
+            }
+//
         }
         return newCards;
     }
@@ -130,10 +139,8 @@ public class GameLogic {
         List<Card> deckCards = game.getDeck().getCards();
         int cardsLeft = deckCards.size();
         List<CardData> newCardsData = new LinkedList<>();
-        List<Card> newCards = addCards(getCurrentPlayer(), new LinkedList<>(deckCards));
-
-        newCards.forEach(card -> newCardsData.add(new CardData(card.getId(), cardPathCreator.getAbsoluteSingleCardPath(card))));
-        gameDAO.save(game);
+        List<Card> newCards = addCards(getCurrentPlayer());
+        newCards.forEach(card -> newCardsData.add(new CardData(card.getId(), cardPathCreator.getAbsoluteSingleCardPath(card),card.getIsTrump())));
         return new CardPackage(cardsLeft, newCardsData);
     }
 
@@ -160,7 +167,7 @@ public class GameLogic {
 
     public boolean tryToPutCardOnTable(long cardId) {
         updateData();
-        if (currentPlayerNumber == game.getWhichPlayerMove()) {
+        if (currentPlayerNumber == game.getWhichPlayerMove() && currentPlayerNumber == game.getWhichPlayerTurn()) {
             Player currentPlayer = getCurrentPlayer();
 
             Optional<Card> optionalCard = currentPlayer.getPlayerCards().stream()
@@ -170,17 +177,29 @@ public class GameLogic {
                 Card card = optionalCard.get();
 
                 Field gameField = game.getField();
-                CardCell cardCell = new CardCell(card);
-                cardCell.setField(gameField);
-                gameField.getCardCells().add(cardCell);
-                removeCardFromPlayer(currentPlayer, card);
+                Optional<CardCell> cardWithSameValue = gameField.getCardCells().stream()
+                        .filter(cardCell ->
+                                cardCell.getBottomCard().getValue() == card.getValue()
+                                || cardCell.getUpperCard() != null
+                                && cardCell.getUpperCard().getValue() == card.getValue()).findFirst();
 
-                gameDAO.save(game);
-                return true;
+                if (gameField.getCardCells().size() == 0 || cardWithSameValue.isPresent()){
+                    CardCell cardCell = new CardCell(card);
+                    cardCell.setField(gameField);
+                    gameField.getCardCells().add(cardCell);
+                    removeCardFromPlayer(currentPlayer, card);
+
+                    gameDAO.save(game);
+                    return true;
+                }
+
+
             }
             return false;
+        } else {
+            //not my turn
+            //System.out.println("not your turn");
         }
-
         return false;
     }
 
@@ -224,8 +243,8 @@ public class GameLogic {
         return false;
     }
 
-    public boolean tryToTakeCardsFromField() {
-        updateData();
+    private boolean tryToTakeCardsFromField() {
+        //updateData();
         List<Card> upperCards = new LinkedList<>();
         List<Card> bottomCards = new LinkedList<>();
 
@@ -258,8 +277,8 @@ public class GameLogic {
         updateData();
 
         boolean isGameFieldHasUnbeatenCards = isGameFieldHasUnbeatenCards();
-        if (currentPlayerNumber == game.getWhichPlayerTurn()) {
-            if (currentPlayerNumber == game.getWhichPlayerMove()) {
+        if (currentPlayerNumber == game.getWhichPlayerTurn()) {// my turn
+            if (currentPlayerNumber == game.getWhichPlayerMove()) {// my move
                 if (isGameFieldHasUnbeatenCards) {
                     if (game.getWhichPlayerMove() == 1) {
                         game.setWhichPlayerMove(2);
@@ -267,7 +286,9 @@ public class GameLogic {
                         game.setWhichPlayerMove(1);
                     }
                 } else {
-                    //game.getField().getCardCells().clear();
+                    Player currentPlayer = getCurrentPlayer();
+                    Player enemyPlayer = getEnemyPlayer();
+
                     game.getField().getCardCells().forEach(cardCell -> cardCell.setField(null));
                     if (game.getWhichPlayerMove() == 1) {
                         game.setWhichPlayerTurn(2);
@@ -276,13 +297,15 @@ public class GameLogic {
                         game.setWhichPlayerTurn(1);
                         game.setWhichPlayerMove(1);
                     }
-                    addCards(getCurrentPlayer(), new LinkedList<>(game.getDeck().getCards()));
-                    addCards(getEnemyPlayer(), new LinkedList<>(game.getDeck().getCards()));
-                }
-            }
+                    giveCardsToPlayers(currentPlayer,enemyPlayer);
 
-        } else {
-            if (currentPlayerNumber == game.getWhichPlayerMove()) {
+                }
+            } else {// not my turn but my move
+                //---------------------------waiting
+
+            }
+        } else {// not my turn
+            if (currentPlayerNumber == game.getWhichPlayerMove()) {// my move
                 if (isGameFieldHasUnbeatenCards) {
                     tryToTakeCardsFromField();
                     if (game.getWhichPlayerMove() == 1) {
@@ -292,15 +315,18 @@ public class GameLogic {
                         game.setWhichPlayerTurn(1);
                         game.setWhichPlayerMove(1);
                     }
-
+                    giveCardsToPlayers(game.getPlayer1(),game.getPlayer2());
+                    //take cards
                 } else {
                     if (game.getWhichPlayerMove() == 1) {
                         game.setWhichPlayerMove(2);
                     } else {
                         game.setWhichPlayerMove(1);
                     }
-
+                    //finish move
                 }
+            } else { //not my turn, not my move
+                //-----------------------------waiting
             }
         }
 
@@ -327,13 +353,20 @@ public class GameLogic {
     }
 
     private void leaveFromOtherGames(Player player) {
-        Optional<Game> optionalGame = gameDAO.findGameByPlayer1OrPlayer2(player, player);
+        Optional<Game> optionalGame = gameDAO.findGameByPlayerNameToLeave(player.getName());
+        player.getPlayerCards().forEach(card -> card.setPlayer(null));
+        player.getPlayerCards().clear();
+
+        player.setTakesLastCard(false);
+        player.setTakesPreLastCard(false);
+
         optionalGame.ifPresent(game -> {
             if (game.getPlayer1().getId() == player.getId()) {
                 game.setPlayer1Leaves(true);
             } else {
                 game.setPlayer2Leaves(true);
             }
+            game.setFinished(true);
             gameDAO.save(game);
         });
     }
@@ -360,7 +393,7 @@ public class GameLogic {
 
         if (optionalPlayer.isPresent()) {
             Player player = optionalPlayer.get();
-            Optional<Game> optionalGame = gameDAO.findGameByPlayer1OrPlayer2(player, player);
+            Optional<Game> optionalGame = gameDAO.findNotFinishedGameByPlayerName(getUserName());
             optionalGame.ifPresent(game -> {
                 this.game = game;
                 player1 = this.game.getPlayer1();

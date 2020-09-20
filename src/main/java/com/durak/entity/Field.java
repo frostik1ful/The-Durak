@@ -13,7 +13,7 @@ public class Field {
     @Id
     @GeneratedValue(strategy = GenerationType.AUTO)
     private long id;
-    @OneToMany(cascade = CascadeType.ALL, mappedBy = "field")
+    @OneToMany(cascade = CascadeType.ALL,mappedBy = "field")
     private List<CardCell> cardCells;
 
     public List<CardCell> getCardCells() {

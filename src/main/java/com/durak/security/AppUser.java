@@ -9,6 +9,9 @@ import java.util.Collection;
 import java.util.Collections;
 
 public class AppUser implements UserDetails {
+    /**
+     *
+     */
     private static final long serialVersionUID = -4570554903045612319L;
     private User user;
 

@@ -12,6 +12,7 @@ public class Card {
     private Long id;
     private Suit suit;
     private Value value;
+    private boolean isTrump;
     @ManyToOne
     @JoinColumn(name = "deck_id")
     private Deck deck;
@@ -34,6 +35,14 @@ public class Card {
 
     public Value getValue() {
         return value;
+    }
+
+    public boolean getIsTrump() {
+        return isTrump;
+    }
+
+    public void setIsTrump(boolean trump) {
+        isTrump = trump;
     }
 
     @Override

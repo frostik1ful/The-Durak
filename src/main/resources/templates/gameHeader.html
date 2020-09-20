@@ -8,7 +8,7 @@
     <link th:href="@{/css/style.css}" rel="stylesheet" />
 </head>
 <body>
-<div th:fragment="header">
+<div th:fragment="gameHeader">
 <nav class="site-header sticky-top py-1 elem">
     <div class="container d-flex flex-column flex-md-row justify-content-between " style="max-width: 960px;">
         <a class="py-2" href="#" aria-label="Product " style="color: #999;">
@@ -24,7 +24,7 @@
             <button class="btn btn-warning">Create Game</button>
         </form>
         <a class="btn btn-warning" href="/game/lobby">Lobby</a>
-        <a class="btn btn-warning" href="/game/game">Back to Game</a>
+
 
         <form action="/logOut">
             <button class="btn btn-warning">Log Out</button>

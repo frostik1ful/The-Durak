@@ -4,11 +4,13 @@ public class CardData {
     private long id;
     private String path;
     private String divClass = "";
+    private boolean isTrump;
 
 
-    public CardData(long id, String path) {
+    public CardData(long id, String path,boolean isTrump) {
         this.id = id;
         this.path = path;
+        this.isTrump = isTrump;
     }
     public CardData(){
 
@@ -38,6 +40,12 @@ public class CardData {
     public void setDivClass(String divClass) {
         this.divClass = divClass;
     }
+    public boolean getIsTrump() {
+        return isTrump;
+    }
 
+    public void setIsTrump(boolean trump) {
+        isTrump = trump;
+    }
 
 }

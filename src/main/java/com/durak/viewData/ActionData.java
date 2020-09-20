@@ -10,7 +10,6 @@ public class ActionData {
     private List<CardData> cardsToTakeFromField = new LinkedList<>();
     private List<CardData> cardsToTakeFromDeck = new LinkedList<>();
     private int cardsLeftInDeck;
-
     public ActionData() {
     }
 

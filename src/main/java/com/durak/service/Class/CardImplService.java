@@ -15,6 +15,6 @@ public class CardImplService implements CardDAO {
 
     @Override
     public Optional<Card> findByIdAndPlayerId(long id, long playerId) {
-        return cardRepository.findByIdAndPlayerId(id, playerId);
+        return cardRepository.findByIdAndPlayerId(id,playerId);
     }
 }

@@ -14,13 +14,13 @@ import org.springframework.security.web.util.matcher.AntPathRequestMatcher;
 
 @Configuration
 @EnableWebSecurity
-public class securityConfig extends WebSecurityConfigurerAdapter {
+public class securityConfig extends WebSecurityConfigurerAdapter{
     private final PasswordEncoder passwordEncoder;
     private final UserDetailsService userDetailsService;
-
+    int a=5;
 
     @Autowired
-    public securityConfig(PasswordEncoder passwordEncoder, @Qualifier("userService") UserDetailsService userDetailsService) {
+    public securityConfig(PasswordEncoder passwordEncoder,@Qualifier("userService") UserDetailsService userDetailsService) {
         this.passwordEncoder = passwordEncoder;
         this.userDetailsService = userDetailsService;
     }
@@ -28,27 +28,27 @@ public class securityConfig extends WebSecurityConfigurerAdapter {
 
     @Override
     public void configure(HttpSecurity http) throws Exception {
-
-        http.csrf().disable()
-                .authorizeRequests().antMatchers("/registration", "/register").permitAll()
-                .anyRequest()
-                .authenticated()
-                .and()
-                .httpBasic()
-                .and()
-                .formLogin()
-                .loginPage("/login").permitAll().defaultSuccessUrl("/game/lobby", true)
-                .and()
-                .logout()
-                .logoutUrl("/logOut")
-                .logoutRequestMatcher(new AntPathRequestMatcher("/logOut", "GET"))
-                .clearAuthentication(true)
-                .invalidateHttpSession(true)
-                .logoutSuccessUrl("/login");
+            
+            http.csrf().disable()
+                    .authorizeRequests().antMatchers("/registration","/register").permitAll()
+                    .anyRequest()
+                    .authenticated()
+                    .and()
+                    .httpBasic()
+                    .and()
+                    .formLogin()
+                    .loginPage("/login").permitAll().defaultSuccessUrl("/game/lobby",true)
+                    .and()
+                        .logout()
+                        .logoutUrl("/logOut")
+                        .logoutRequestMatcher(new AntPathRequestMatcher("/logOut","GET"))
+                        .clearAuthentication(true)
+                        .invalidateHttpSession(true)
+                        .logoutSuccessUrl("/login");
     }
 
     @Bean
-    public DaoAuthenticationProvider daoAuthenticationProvider() {
+    public DaoAuthenticationProvider daoAuthenticationProvider(){
         DaoAuthenticationProvider provider = new DaoAuthenticationProvider();
         provider.setPasswordEncoder(passwordEncoder);
         provider.setUserDetailsService(userDetailsService);

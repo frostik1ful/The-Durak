@@ -32,6 +32,9 @@ public class Game {
     private boolean player1Leaves;
     @Column(name = "player2_leaves")
     private boolean player2Leaves;
+    private boolean player1Wins;
+    private boolean player2Wins;
+
 
 
     public Game(Player player1, DeckDAO deckDAO, FieldDAO fieldDAO) {
@@ -89,7 +92,7 @@ public class Game {
         isFinished = finished;
     }
 
-    public boolean isPlayer1Leaves() {
+    public boolean getPlayer1Leaves() {
         return player1Leaves;
     }
 
@@ -97,7 +100,7 @@ public class Game {
         this.player1Leaves = player1Leaves;
     }
 
-    public boolean isPlayer2Leaves() {
+    public boolean getPlayer2Leaves() {
         return player2Leaves;
     }
 
@@ -124,4 +127,22 @@ public class Game {
     public Field getField() {
         return field;
     }
+
+    public boolean isPlayer1Wins() {
+        return player1Wins;
+    }
+
+    public void setPlayer1Wins(boolean player1Wins) {
+        this.player1Wins = player1Wins;
+    }
+
+    public boolean isPlayer2Wins() {
+        return player2Wins;
+    }
+
+    public void setPlayer2Wins(boolean player2Wins) {
+        this.player2Wins = player2Wins;
+    }
+
+
 }

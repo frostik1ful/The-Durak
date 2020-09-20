@@ -30,6 +30,11 @@ public class GameImplService implements GameDAO {
     }
 
     @Override
+    public List<Game> getNotStartedGames() {
+        return gameRepository.findGamesByIsStarted(false);
+    }
+
+    @Override
     public void save(Game game) {
         gameRepository.save(game);
     }
@@ -40,8 +45,23 @@ public class GameImplService implements GameDAO {
     }
 
     @Override
-    public Optional<Game> findGameByPlayer1OrPlayer2(Player player1, Player player2) {
+    public Optional<Game> findGameByPlayer1OrPlayer12(Player player1, Player player2) {
         return gameRepository.findGameByPlayer1OrPlayer2(player1, player2);
+    }
+
+    @Override
+    public Optional<Game> findNotFinishedGameByPlayerName(String playerName) {
+        return gameRepository.findByPlayerName(playerName);
+    }
+
+    @Override
+    public Optional<Game> findGameByPlayerNameToLeave(String playerName) {
+        return gameRepository.findGameByPlayerNameToLeave(playerName);
+    }
+
+    @Override
+    public List<Optional<Game>> findTestGame(String name) {
+        return gameRepository.findTestGame(name);
     }
 
 }
