@@ -1,0 +1,30 @@
+<!DOCTYPE html>
+<html xmlns:th="http://www.thymeleaf.org">
+<head>
+    <meta charset="UTF-8">
+    <title>Login</title>
+    <link rel="stylesheet" href="https://stackpath.bootstrapcdn.com/bootstrap/4.4.1/css/bootstrap.min.css"
+          integrity="sha384-Vkoo8x4CGsO3+Hhxv8T/Q5PaXtkKtu6ug5TOeNV6gBiFeWPGFN9MuhOf23Q9Ifjh" crossorigin="anonymous">
+</head>
+<body>
+<div class="container" style="background-color: grey">
+    <form action="/login" method="post">
+        <p>
+            <label for="username">Name</label>
+            <input class="form-control" required name="username" id="username">
+        </p>
+        <p>
+            <label for="password">Password</label>
+            <input class="form-control" type="password" required name="password" id="password">
+        </p>
+        <button class="btn btn-lg btn-primary btn-block" name="submit">Login</button>
+
+    </form>
+    <p>
+    <form action="/registration">
+        <button class="btn btn-lg btn-success btn-block" type="submit">Registration</button>
+    </form>
+    </p>
+</div>
+</body>
+</html>

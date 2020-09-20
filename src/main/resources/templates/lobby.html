@@ -1,0 +1,44 @@
+<!DOCTYPE html>
+<html xmlns:th="http://www.thymeleaf.org">
+<head>
+    <meta charset="UTF-8">
+    <title>Lobby</title>
+    <!--<link rel="stylesheet" href="https://stackpath.bootstrapcdn.com/bootstrap/4.4.1/css/bootstrap.min.css"-->
+    <!--integrity="sha384-Vkoo8x4CGsO3+Hhxv8T/Q5PaXtkKtu6ug5TOeNV6gBiFeWPGFN9MuhOf23Q9Ifjh">-->
+    <link rel="stylesheet" href="/css/style.css">
+    <link th:href="@{/css/bootstrap.css}" rel="stylesheet"/>
+    <link th:href="@{/css/style.css}" rel="stylesheet"/>
+</head>
+
+<body>
+<div th:insert="~{header :: header}"></div>
+<div th:if="${games!=null}">
+        <table class="table table-striped container">
+            <thead>
+            <tr>
+                <th scope="col">Creator Name</th>
+                <th scope="col">Is game started</th>
+                <th scope="col">Join</th>
+            </tr>
+            </thead>
+            <tbody>
+            <tr th:each="game:${games}">
+                <td th:text="${game.getPlayer1().getName()}"></td>
+                <td th:text="${game.Started}"></td>
+                <td>
+                    <form method="post" th:action="@{/game/join(id=${game.id})}">
+                        <button class="btn btn-success">Join</button>
+                    </form>
+                </td>
+
+            </tr>
+
+
+            </tbody>
+        </table>
+
+</div>
+
+
+</body>
+</html>
