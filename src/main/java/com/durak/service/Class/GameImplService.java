@@ -64,10 +64,4 @@ public class GameImplService implements GameDAO {
         return gameRepository.findTestGame(name);
     }
 
-//    @Override
-//    public List<Optional<Game>> findTestGame(String playerName) {
-//        //OrPlayer2NameAndFinishedIsFalse
-//        return gameRepository.findByPlayerName(playerName);
-//    }
-
 }

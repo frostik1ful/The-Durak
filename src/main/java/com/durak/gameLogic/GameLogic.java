@@ -55,13 +55,10 @@ public class GameLogic {
     public void createGame() {
         Optional<Player> optionalPlayer = playerDAO.findPlayerByName(getUserName());
         optionalPlayer.ifPresent(player -> {
-
-            //player1 = optionalPlayer.get();
             currentPlayerNumber = 1;
             leaveFromOtherGames(player);
             game = new Game(player, deckDAO, fieldDAO);
             player.setGame(game);
-
             gameDAO.save(game);
             playerDAO.save(player);
         });
@@ -91,7 +88,6 @@ public class GameLogic {
                 whoseFirstTurn = whoseFirstTurn();
                 game.setWhichPlayerTurn(whoseFirstTurn);
                 game.setWhichPlayerMove(whoseFirstTurn);
-                System.out.println("joinde "+game.getPlayer2().getPlayerCards().size());
                 gameDAO.save(game);
                 return true;
             }
@@ -101,27 +97,8 @@ public class GameLogic {
     }
 
     private void giveCardsToPlayers(Player player1,Player player2) {
-        //updateData();
-//        LinkedList<Card> deckCards = new LinkedList<>(game.getDeck().getCards());
-//        System.out.println("deckCardsize " + deckCards.size());
-
-//        addCards(player1, deckCards);
-//        addCards(player2, deckCards);
-
         addCards(player2);
         addCards(player1);
-
-        System.out.println("player1 cards "+player1.getPlayerCards().size());
-        System.out.println("player2 cards "+player2.getPlayerCards().size());
-        //System.out.println("player1Size " + player1.getPlayerCards().size());
-        //System.out.println("player2Size " + player2.getPlayerCards().size());
-        //game.getDeck().getCards().clear();
-        //System.out.println("gameDeckSize1 " + game.getDeck().getCards().size());
-        //game.getDeck().getCards().addAll(deckCards);
-        //System.out.println("gameDeckSize2 " + game.getDeck().getCards().size());
-
-        //gameDAO.save(game);
-
     }
 
     private List<Card> addCards(Player player) {
@@ -144,15 +121,12 @@ public class GameLogic {
 
 
             if (deckCards.size() == 1) {
-                System.out.println("player "+player.getName() + " takesPrelastCard");
                 player.setTakesPreLastCard(true);
             }
             if (deckCards.size() == 0){
                 if (cardsToGive > 1) {
-                    System.out.println("player "+player.getName() + " takesPrelastCard2");
                     player.setTakesPreLastCard(true);
                 }
-                System.out.println("player "+player.getName() + " takeslastCard");
                 player.setTakesLastCard(true);
             }
 //
@@ -165,10 +139,8 @@ public class GameLogic {
         List<Card> deckCards = game.getDeck().getCards();
         int cardsLeft = deckCards.size();
         List<CardData> newCardsData = new LinkedList<>();
-        //List<Card> newCards = addCards(getCurrentPlayer(), new LinkedList<>(deckCards));
         List<Card> newCards = addCards(getCurrentPlayer());
         newCards.forEach(card -> newCardsData.add(new CardData(card.getId(), cardPathCreator.getAbsoluteSingleCardPath(card),card.getIsTrump())));
-        //gameDAO.save(game);
         return new CardPackage(cardsLeft, newCardsData);
     }
 
@@ -205,8 +177,6 @@ public class GameLogic {
                 Card card = optionalCard.get();
 
                 Field gameField = game.getField();
-                System.out.println("4eck "+card == null +" () "+gameField.getCardCells().size());
-                System.out.println("hello");
                 Optional<CardCell> cardWithSameValue = gameField.getCardCells().stream()
                         .filter(cardCell ->
                                 cardCell.getBottomCard().getValue() == card.getValue()
@@ -225,11 +195,10 @@ public class GameLogic {
 
 
             }
-            System.out.println("impossible");
             return false;
         } else {
-
-            System.out.println("not your turn");
+            //not my turn
+            //System.out.println("not your turn");
         }
         return false;
     }
@@ -308,15 +277,14 @@ public class GameLogic {
         updateData();
 
         boolean isGameFieldHasUnbeatenCards = isGameFieldHasUnbeatenCards();
-        if (currentPlayerNumber == game.getWhichPlayerTurn()) {// мой турн
-            if (currentPlayerNumber == game.getWhichPlayerMove()) {// мой мув
+        if (currentPlayerNumber == game.getWhichPlayerTurn()) {// my turn
+            if (currentPlayerNumber == game.getWhichPlayerMove()) {// my move
                 if (isGameFieldHasUnbeatenCards) {
                     if (game.getWhichPlayerMove() == 1) {
                         game.setWhichPlayerMove(2);
                     } else {
                         game.setWhichPlayerMove(1);
                     }
-                    System.out.println("give move to another player");
                 } else {
                     Player currentPlayer = getCurrentPlayer();
                     Player enemyPlayer = getEnemyPlayer();
@@ -329,22 +297,15 @@ public class GameLogic {
                         game.setWhichPlayerTurn(1);
                         game.setWhichPlayerMove(1);
                     }
-
-//                    currentPlayer.setTakesPreLastCard(false);
-//                    currentPlayer.setTakesLastCard(false);
-//                    enemyPlayer.setTakesPreLastCard(false);
-//                    enemyPlayer.setTakesLastCard(false);
                     giveCardsToPlayers(currentPlayer,enemyPlayer);
-                    //addCards(currentPlayer);
-                    //addCards(enemyPlayer);
-                    System.out.println("//otboy");
+
                 }
-            } else {//мой турн не мой мув
+            } else {// not my turn but my move
                 //---------------------------waiting
-                System.out.println("WAITING-----");
+
             }
-        } else {// не мой турн
-            if (currentPlayerNumber == game.getWhichPlayerMove()) {// Mой мув
+        } else {// not my turn
+            if (currentPlayerNumber == game.getWhichPlayerMove()) {// my move
                 if (isGameFieldHasUnbeatenCards) {
                     tryToTakeCardsFromField();
                     if (game.getWhichPlayerMove() == 1) {
@@ -355,7 +316,6 @@ public class GameLogic {
                         game.setWhichPlayerMove(1);
                     }
                     giveCardsToPlayers(game.getPlayer1(),game.getPlayer2());
-                    System.out.println("take cards");
                     //take cards
                 } else {
                     if (game.getWhichPlayerMove() == 1) {
@@ -363,12 +323,10 @@ public class GameLogic {
                     } else {
                         game.setWhichPlayerMove(1);
                     }
-                    System.out.println("give move to another player2");
-                    // otboy
+                    //finish move
                 }
-            } else { // не мой турн,  не мой мув
+            } else { //not my turn, not my move
                 //-----------------------------waiting
-                System.out.println("WAITING-----");
             }
         }
 
@@ -404,16 +362,13 @@ public class GameLogic {
 
         optionalGame.ifPresent(game -> {
             if (game.getPlayer1().getId() == player.getId()) {
-                System.out.println("game "+game.getId() + "player1 leave");
                 game.setPlayer1Leaves(true);
             } else {
-                System.out.println("game "+game.getId() + "player2 leave");
                 game.setPlayer2Leaves(true);
             }
             game.setFinished(true);
             gameDAO.save(game);
         });
-        //playerDAO.save(player);
     }
 
     private void updateData() {

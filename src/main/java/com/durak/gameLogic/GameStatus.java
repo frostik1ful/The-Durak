@@ -61,8 +61,6 @@ public class GameStatus {
         data.setTakesPreLastCard(currentPlayer.getTakesPreLastCard());
         data.setTakesLastCard(currentPlayer.getTakesLastCard());
 
-
-//        data.setCardsLeftInDeck(currentGame.getDeck().getCards().size());
         data.setFieldCells(getFieldCells());
         data.setActionButtonText(getActionButtonText());
         data.setMyTurn(isMyTurn());
@@ -87,18 +85,18 @@ public class GameStatus {
     }
 
     private boolean isIWon() {
-        if (currentGame.getPlayer1Leaves()) {
-            System.out.println("player1 leaves");
-            if (currentGame.getPlayer1().equals(enemyPlayer)) {
-                System.out.println("enemy Leaves");
-            }
-        }
-        if (currentGame.getPlayer2Leaves()) {
-            System.out.println("player2 leaves");
-            if (currentGame.getPlayer1().equals(enemyPlayer)) {
-                System.out.println("enemy Leaves");
-            }
-        }
+//        if (currentGame.getPlayer1Leaves()) {
+//            System.out.println("player1 leaves");
+//            if (currentGame.getPlayer1().equals(enemyPlayer)) {
+//                System.out.println("enemy Leaves");
+//            }
+//        }
+//        if (currentGame.getPlayer2Leaves()) {
+//            System.out.println("player2 leaves");
+//            if (currentGame.getPlayer1().equals(enemyPlayer)) {
+//                System.out.println("enemy Leaves");
+//            }
+//        }
         if (currentGame.getField().getCardCells().size() == 0 && currentGame.getDeck().getCards().size() == 0 && currentPlayer.getPlayerCards().size() == 0
                 || currentGame.getPlayer1().equals(enemyPlayer) && currentGame.getPlayer1Leaves()
                 || currentGame.getPlayer2().equals(enemyPlayer) && currentGame.getPlayer2Leaves()) {
@@ -118,7 +116,6 @@ public class GameStatus {
     }
 
     public String getEnemyName() {
-        String name;
         try {
             return getEnemyPlayer().getName();
         } catch (NullPointerException e) {
@@ -258,7 +255,6 @@ public class GameStatus {
         }
 
         if (optionalGame.isPresent()) {
-            //System.out.println("game 1s founded");
             currentGame = optionalGame.get();
             if (currentGame.getPlayer1().equals(currentPlayer) || currentGame.getPlayer1().getName().equals(getUserName())) {
                 currentPlayer = currentGame.getPlayer1();
@@ -269,9 +265,10 @@ public class GameStatus {
                 currentPlayer = currentGame.getPlayer2();
                 enemyPlayer = currentGame.getPlayer1();
             }
-        } else {
-            System.out.println("game not founded");
         }
+//        else {
+//            System.out.println("game not founded");
+//        }
     }
 
     private boolean isGameFieldHasUnbeatenCards() {

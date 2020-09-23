@@ -40,10 +40,6 @@ public class GameController {
     @GetMapping("/lobby")
     public String lobby(Model model){
         model.addAttribute("games",gameDAO.getNotStartedGames());
-        // model.addAttribute("games",gameDAO.getAllGames());
-//        model.addAttribute("games",null);
-        //System.out.println("ISGAME NULL??? "+gameDAO.getAllGames()==null);
-        //gameDAO.getAllGames().forEach(game -> System.out.println("games!!! "+game.getId()));
         model.addAttribute("userName", getCurrentUser().getName());
         return "lobby";
     }
@@ -51,7 +47,6 @@ public class GameController {
     @GetMapping("/createGame")
     public String createGame(){
         gameLogic.createGame();
-
         return"redirect:/game/lobby";
     }
 
@@ -66,13 +61,6 @@ public class GameController {
         }
 
     }
-    //++tot kto ne hodit mozet podkinut
-    //++vzyal karti i hodit
-    //esli net cart ne obnoblyaetsya
-    //++ last carta y vraga ne krytitsya
-    //++esli vzyal ne hodit sledyyshim
-    // videlennaya karta stavitsya esli nazat take kards (mb nazal na pole)
-
     @RequestMapping(value = "/update")
     @ResponseBody
     public MainData update(){
@@ -134,25 +122,6 @@ public class GameController {
         return gameLogic.takeNewCards();
     }
 
-//    @RequestMapping(value = "/enemyCard")
-//    @ResponseBody
-//    public CardData enemyCard(@RequestParam long cardId){
-//        CardData a = null;
-////        String answer="";
-//
-//        Player player = playerDAO.findPlayerByName(getUserName()).get();
-//        Game game = gameDAO.findGameByPlayer1OrPlayer2(player,player).get();
-//
-//        Player player2 = game.getPlayer2();
-//        Optional<Card> result = cardDAO.findByIdAndPlayerId(cardId,player2.getId());
-//        a = new CardData(cardId,cardPathCreator.getAbsoluteSingleCardPath(result.get()));
-////        if (result.isPresent()){
-////                answer = cardPathCreator.getAbsoluteSingleCardPath(result.get());
-////        }
-//
-//
-//        return a;
-//    }
 
     private User getCurrentUser(){
         return userDAO.findUserByName(SecurityContextHolder.getContext().getAuthentication().getName());
