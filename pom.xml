@@ -10,6 +10,7 @@
   <groupId>com.Durak</groupId>
   <artifactId>durakart</artifactId>
   <version>0.0.1-SNAPSHOT</version>
+  <packaging>war</packaging>
   <name>durakart</name>
   <description>Spring Durak</description>
   <properties>

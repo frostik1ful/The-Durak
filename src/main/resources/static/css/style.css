@@ -1,5 +1,3 @@
-<<<<<<< HEAD
-=======
 .box{
     background-color: blueviolet;
     font-size: 30px;
@@ -15,7 +13,6 @@
     display: block;
     box-sizing: border-box;
 }
->>>>>>> bf0d404da72faaeeee6527d04e7cd736c0261199
 .btn {
     font-weight: bold;
 }
